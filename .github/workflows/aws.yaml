@@ -26,7 +26,9 @@ jobs:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
     outputs:
-      image: ${{ steps.build-image.outputs.image }}
+      #image: ${{ steps.build-image.outputs.image }}
+      image_tag: ${{ steps.build-image.outputs.image_tag }}
+      ecr_registry: ${{ steps.login-ecr.outputs.registry }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -48,12 +50,16 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          # IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          # echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          # docker build -t $IMAGE_URI .
+          # docker push $IMAGE_URI
+          # echo "Built image URI: $IMAGE_URI"
+          # echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
           IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
-          echo "Built image URI: $IMAGE_URI"
-          echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
   # -------------------------------
   # 2. Deploy to ECS
@@ -79,7 +85,8 @@ jobs:
         with:
           task-definition: ${{ env.ECS_TASK_DEFINITION }}
           container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ needs.build-and-push.outputs.image }}
+          #image: ${{ needs.build-and-push.outputs.image }}
+          image: ${{ needs.build-and-push.outputs.ecr_registry }}/${{ env.ECR_REPOSITORY }}:${{ needs.build-and-push.outputs.image_tag }}
 
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
