@@ -28,7 +28,7 @@ jobs:
     outputs:
       #image: ${{ steps.build-image.outputs.image }}
       image_tag: ${{ steps.build-image.outputs.image_tag }}
-      ecr_registry: ${{ steps.login-ecr.outputs.registry }}
+      #ecr_registry: ${{ steps.login-ecr.outputs.registry }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -78,6 +78,11 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+        
+      # ADD THIS ENTIRE STEP
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
       - name: Render Task Definition
         id: render-task
@@ -86,8 +91,9 @@ jobs:
           task-definition: ${{ env.ECS_TASK_DEFINITION }}
           container-name: ${{ env.CONTAINER_NAME }}
           #image: ${{ needs.build-and-push.outputs.image }}
-          image: ${{ needs.build-and-push.outputs.ecr_registry }}/${{ env.ECR_REPOSITORY }}:${{ needs.build-and-push.outputs.image_tag }}
-
+          #image: ${{ needs.build-and-push.outputs.ecr_registry }}/${{ env.ECR_REPOSITORY }}:${{ needs.build-and-push.outputs.image_tag }}
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ needs.build-and-push.outputs.image_tag }}
+          
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
